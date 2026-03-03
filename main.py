@@ -59,7 +59,7 @@ def main():
             generator_runs, _ = ax_client.get_next_trials(max_trials=9)
             for trial_index, params in generator_runs.items():
                 print(f"Trial {trial_index}: {params}")
-            break
+            return
 
     # Plot Pareto frontier
     frontier = ax_client.get_pareto_optimal_parameters()
