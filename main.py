@@ -52,12 +52,14 @@ def main():
                 )
                 ax_client.complete_trial(
                     trial_index=trial_index,
-                    raw_data={"thinning": row[4], "wrinkling": row[5]},
+                    raw_data={"thinning": abs(row[4]), "wrinkling": row[5]},
                 )
             continue
         else:
-            params, trial_index = ax_client.get_next_trial()
-            print(params, trial_index)
+            generator_runs, _ = ax_client.get_next_trials(max_trials=9)
+            for trial_index, params in generator_runs.items():
+                print(f"Trial {trial_index}: {params}")
+            break
 
     # Plot Pareto frontier
     frontier = ax_client.get_pareto_optimal_parameters()
@@ -82,7 +84,7 @@ def main():
         xaxis_title="Thinning",
         yaxis_title="Wrinkling",
     )
-    fig.show()
+    fig.write_image("pareto_frontier.svg")
 
 
 if __name__ == "__main__":
