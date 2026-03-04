@@ -29,6 +29,7 @@ def main():
         objectives={
             "thinning": ObjectiveProperties(minimize=True),
             "wrinkling": ObjectiveProperties(minimize=True),
+            "CO2": ObjectiveProperties(minimize=True),
         },
     )
     # define acquisition function to be upper confidence bound
@@ -52,7 +53,11 @@ def main():
                 )
                 ax_client.complete_trial(
                     trial_index=trial_index,
-                    raw_data={"thinning": abs(row[4]), "wrinkling": row[5]},
+                    raw_data={
+                        "thinning": abs(row[4]),
+                        "wrinkling": row[5],
+                        "CO2": row[6],
+                    },
                 )
             continue
         else:
@@ -66,25 +71,51 @@ def main():
 
     thinning_vals = []
     wrinkling_vals = []
+    co2_vals = []
     for trial_index, (params, (means, covariances)) in frontier.items():
         thinning_vals.append(means["thinning"])
         wrinkling_vals.append(means["wrinkling"])
+        co2_vals.append(means["CO2"])
 
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
+    # 3D Pareto surface
+    fig_3d = go.Figure()
+    fig_3d.add_trace(
+        go.Scatter3d(
             x=thinning_vals,
             y=wrinkling_vals,
-            mode="markers+lines",
+            z=co2_vals,
+            mode="markers",
+            marker=dict(size=5),
             name="Pareto Frontier",
         )
     )
-    fig.update_layout(
-        title="Pareto Frontier: Thinning vs Wrinkling",
-        xaxis_title="Thinning",
-        yaxis_title="Wrinkling",
+    fig_3d.update_layout(
+        title="Pareto Frontier: Thinning vs Wrinkling vs CO2",
+        scene=dict(
+            xaxis_title="Thinning",
+            yaxis_title="Wrinkling",
+            zaxis_title="CO2",
+        ),
     )
-    fig.write_image("pareto_frontier.svg")
+    fig_3d.write_image("pareto_frontier_3d.svg")
+
+    # Pairwise 2D plots
+    pairs = [
+        ("Thinning", "Wrinkling", thinning_vals, wrinkling_vals),
+        ("Thinning", "CO2", thinning_vals, co2_vals),
+        ("Wrinkling", "CO2", wrinkling_vals, co2_vals),
+    ]
+    for x_label, y_label, x_data, y_data in pairs:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=x_data, y=y_data, mode="markers", name="Pareto Frontier")
+        )
+        fig.update_layout(
+            title=f"Pareto Frontier: {x_label} vs {y_label}",
+            xaxis_title=x_label,
+            yaxis_title=y_label,
+        )
+        fig.write_image(f"pareto_{x_label.lower()}_vs_{y_label.lower()}.svg")
 
 
 if __name__ == "__main__":
