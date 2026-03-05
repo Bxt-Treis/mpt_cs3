@@ -9,27 +9,26 @@ def main():
     ax_client = AxClient()
     ax_client.create_experiment(
         parameters=[
-            {"name": "forming_speed", "type": "range", "bounds": [50.0, 300.0]},
+            {"name": "forming_speed", "type": "range", "bounds": [100.0, 300.0]},
             {
                 "name": "blank_holding_force_start",
                 "type": "range",
-                "bounds": [0.0, 1.0],
+                "bounds": [100.0, 225.0],
             },
             {
                 "name": "blank_holding_force_middle",
                 "type": "range",
-                "bounds": [1.0, 2.0],
+                "bounds": [225.0, 375.0],
             },
             {
                 "name": "blank_holding_force_end",
                 "type": "range",
-                "bounds": [2.0, 5.0],
+                "bounds": [375.0, 500.0],
             },
         ],
         objectives={
-            "thinning": ObjectiveProperties(minimize=True),
-            "wrinkling": ObjectiveProperties(minimize=True),
-            "energy": ObjectiveProperties(minimize=True),
+            "thinning": ObjectiveProperties(minimize=True, threshold=0.4),
+            "wrinkling": ObjectiveProperties(minimize=True, threshold=70.0),
         },
     )
     # define acquisition function to be upper confidence bound
@@ -38,7 +37,7 @@ def main():
     base = "result"
 
     for i in range(3):
-        full_path = folder / f"{base}_{i}.txt"
+        full_path = folder / f"{base}_{i}.csv"
         if full_path.is_file():
             df = pl.read_csv(full_path)
             print("found results")
@@ -56,7 +55,6 @@ def main():
                     raw_data={
                         "thinning": abs(row[4]),
                         "wrinkling": row[5],
-                        "energy": row[6],
                     },
                 )
             continue
@@ -71,11 +69,9 @@ def main():
 
     thinning_vals = []
     wrinkling_vals = []
-    energy_vals = []
     for trial_index, (params, (means, covariances)) in frontier.items():
         thinning_vals.append(means["thinning"])
         wrinkling_vals.append(means["wrinkling"])
-        energy_vals.append(means["energy"])
 
     # 3D Pareto surface
     fig_3d = go.Figure()
@@ -83,7 +79,6 @@ def main():
         go.Scatter3d(
             x=thinning_vals,
             y=wrinkling_vals,
-            z=energy_vals,
             mode="markers",
             marker=dict(size=5),
             name="Pareto Frontier",
@@ -94,7 +89,6 @@ def main():
         scene=dict(
             xaxis_title="Thinning",
             yaxis_title="Wrinkling",
-            zaxis_title="CO2",
         ),
     )
     fig_3d.write_image("pareto_frontier_3d.svg")
@@ -102,8 +96,6 @@ def main():
     # Pairwise 2D plots
     pairs = [
         ("Thinning", "Wrinkling", thinning_vals, wrinkling_vals),
-        ("Thinning", "CO2", thinning_vals, energy_vals),
-        ("Wrinkling", "CO2", wrinkling_vals, energy_vals),
     ]
     for x_label, y_label, x_data, y_data in pairs:
         fig = go.Figure()
