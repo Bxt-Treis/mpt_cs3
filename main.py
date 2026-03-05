@@ -29,7 +29,7 @@ def main():
         objectives={
             "thinning": ObjectiveProperties(minimize=True),
             "wrinkling": ObjectiveProperties(minimize=True),
-            "CO2": ObjectiveProperties(minimize=True),
+            "energy": ObjectiveProperties(minimize=True),
         },
     )
     # define acquisition function to be upper confidence bound
@@ -56,7 +56,7 @@ def main():
                     raw_data={
                         "thinning": abs(row[4]),
                         "wrinkling": row[5],
-                        "CO2": row[6],
+                        "energy": row[6],
                     },
                 )
             continue
@@ -71,11 +71,11 @@ def main():
 
     thinning_vals = []
     wrinkling_vals = []
-    co2_vals = []
+    energy_vals = []
     for trial_index, (params, (means, covariances)) in frontier.items():
         thinning_vals.append(means["thinning"])
         wrinkling_vals.append(means["wrinkling"])
-        co2_vals.append(means["CO2"])
+        energy_vals.append(means["energy"])
 
     # 3D Pareto surface
     fig_3d = go.Figure()
@@ -83,7 +83,7 @@ def main():
         go.Scatter3d(
             x=thinning_vals,
             y=wrinkling_vals,
-            z=co2_vals,
+            z=energy_vals,
             mode="markers",
             marker=dict(size=5),
             name="Pareto Frontier",
@@ -102,8 +102,8 @@ def main():
     # Pairwise 2D plots
     pairs = [
         ("Thinning", "Wrinkling", thinning_vals, wrinkling_vals),
-        ("Thinning", "CO2", thinning_vals, co2_vals),
-        ("Wrinkling", "CO2", wrinkling_vals, co2_vals),
+        ("Thinning", "CO2", thinning_vals, energy_vals),
+        ("Wrinkling", "CO2", wrinkling_vals, energy_vals),
     ]
     for x_label, y_label, x_data, y_data in pairs:
         fig = go.Figure()
